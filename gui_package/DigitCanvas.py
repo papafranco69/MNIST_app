@@ -51,7 +51,8 @@ class DigitCanvas(ttk.Frame):
         super().__init__()
         self.root = container
         
-        utilFrame = ttk.Frame(self.root)
+        border = ttk.Labelframe(self.root)
+        utilFrame = ttk.Frame(border)
         
         self.globalPixelMatrix = np.array(np.zeros((500, 500), dtype=int))
 
@@ -61,11 +62,13 @@ class DigitCanvas(ttk.Frame):
         
         self.hasDrawn = False
         
-        self.canvas = Canvas(self.root, width = 500, height = 500, background = 'white')
+        self.canvas = Canvas(border, width = 500, height = 500, background = 'white')
         self.canvas.grid(column = 0, row = 0)
         
         self.canvas.bind("<Button-1>", lambda e :self.draw(event = e, localPixelMatrix=self.globalPixelMatrix))
         self.canvas.bind("<B1-Motion>", lambda e :self.draw(event = e, localPixelMatrix=self.globalPixelMatrix))
+        
+        border.pack()
         
         utilFrame.grid(column = 0, row = 1)
         
@@ -117,7 +120,9 @@ class DigitCanvas(ttk.Frame):
         #corresponding to the canvas-pixel on which the user clicked.
         for i in range(int(event.y)-5, int(event.y)+6):
             for j in range(int(event.x)-5, int(event.x)+6):
-                if 0 <= i < iMax and 0 <= j < jMax:
+                #added the extra condition so short-circuit logic prevents extra operations
+                #It might not actually matter, however.
+                if localPixelMatrix[i][j] != 1 and 0 <= i < iMax and 0 <= j < jMax:
                     localPixelMatrix[i][j] = 1
         
         self.hasDrawn = True
@@ -160,6 +165,18 @@ class DigitCanvas(ttk.Frame):
             messagebox.showerror(message="You must first Draw a Digit!", title = "Error")
 
         
+    def deriveArray(self, inpuMatrix, hasDrawn):
+        if hasDrawn:
+            try:
+                imc = ImgMatConv.ImgMatConv(self.globalPixelMatrix, self.outputPath)
+                self.digitArray = imc.imgToArray()
+                
+                return self.digitArray
+            except ValueError as e:
+                messagebox.showerror(message=str(e), title = "Error")
+        else:
+            messagebox.showerror(message="You must first Draw a Digit!", title = "Error")
+    
     def classifyDigit(self, array):
         '''Is meant to call methods for the machine learning models using the dataset element
         Constructed by the ImgMatConv class. As of now, this doesn't do anything, but it should
@@ -171,3 +188,5 @@ class DigitCanvas(ttk.Frame):
         '''
         messagebox.askyesno(title = "Digit Classified!", message = "Your digit is a:\nIs this Right?")
     
+    def getDigitArray(self):
+        return self.digitArray

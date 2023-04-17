@@ -26,7 +26,7 @@ class ImgMatConv:
     into an element of data based on the MNIST dataset.
     '''
 
-    def __init__(self, inputMatrix, outputPath):
+    def __init__(self, inputMatrix, outputPath = r''):
         '''
         This class has methods for converting an image to an integer matrix,
         for centering an integer matrix about its center of mass, reducing
@@ -59,17 +59,46 @@ class ImgMatConv:
         
         smallMatrix = self.shrinkMatrix(centeredMatrix, 20, 20)
         self.writeMatrix(smallMatrix, outputPath + 'small1.txt')
-        print(self.findCenterOfMass(smallMatrix))
         
         paddedMatrix = self.padMatrix(smallMatrix, 4)
         self.writeMatrix(paddedMatrix, outputPath + 'padded1.txt')
         
         
         array = self.matrixToArray(paddedMatrix)
-        self.writeArray(array, outputPath + 'array1.txt')
+        self.writeMatrix(array, outputPath + 'array1.txt')
+        
+        
+        array255 = self.mapTo255(array)
+        self.writeMatrix(array255, outputPath + 'array255.txt')
+        
+        matrix255 = self.mapTo255(paddedMatrix)
+        self.writeMatrix(matrix255, outputPath + 'matrix255.txt')
         
         return array
 
+    def imgToArray(self):
+        '''
+        This runs the methods to center, resize, and pad a matrix
+        which is then mapped to an array. The array is then returned.
+        This method does not save the matrices/arrays to text files.
+        
+        This method will be used to export the data for a drawn digit
+        to a form compatible with the MNIST dataset and the ML models
+        the user can select from. Allows the user-drawn digit to be
+        classified.
+        
+        Returns:
+        array255: numpy 1D array
+        '''
+        pixelMatrix = self.inputMatrix
+        com = self.findCenterOfMass(pixelMatrix)
+        centeredMatrix = self.centerMatrix(pixelMatrix, com)
+        smallMatrix = self.shrinkMatrix(centeredMatrix, 20, 20)
+        paddedMatrix = self.padMatrix(smallMatrix, 4)
+        array = self.matrixToArray(paddedMatrix)
+        array255 = self.mapTo255(array)
+
+        return array255
 
     def imgToMatrix(self, filePath):
         '''
@@ -93,8 +122,6 @@ class ImgMatConv:
                         
                     else:
                         pixelMatrix[i][j] = 1
-            print(pixelMatrix)
-            print(pixelMatrix.shape)
             return pixelMatrix
             
             
@@ -103,43 +130,31 @@ class ImgMatConv:
             return -1
     
     
-    def writeMatrix(self, matrix, filePath):
+    def writeMatrix(self, matrix, filePath = "matrix.txt"):
         '''
         Outputs the contents of an integer matrix to a text file, with
         a single whitespace between each element in a row. New rows are
         begun on a new line in the text file.
         
         Parameters:
-        matrix: numpy 2D integer matrix.
+        matrix: numpy integer array of 1D or 2D
         filePath: string. The output path for the textfile.
         '''
         try:
             with open(filePath, 'w+', encoding="utf-8") as output:
-                for i in range(matrix.shape[0]):
+                if (len(matrix.shape) == 2):
+                    for i in range(matrix.shape[0]):
+                        line = ''
+                        for j in range(matrix.shape[1]):
+                            line = line + str(matrix[i][j]) + ' ';
+                        print(line, file = output)
+                elif (len(matrix.shape) == 1):
                     line = ''
-                    for j in range(matrix.shape[1]):
-                        line = line + str(matrix[i][j]) + ' ';
+                    for i in range(len(matrix)):
+                        line = line + str(matrix[i]) + ' '
                     print(line, file = output)
-        except FileNotFoundError:
-            print("Invalid File Path")
-        
-    
-    def writeArray(self, array, filePath):
-        '''
-        Outputs the contents of an integer array to a textfile,
-        with each element separated by a single whitespace.
-        
-        Parameters:
-        matrix: numpy 2D integer matrix.
-        filePath: string. The output path for the textfile.
-        '''
-        
-        line = ''
-        try:
-            with open(filePath, 'w+', encoding = "utf-8") as output:
-                for i in range(len(array)):
-                    line = line + str(array[i]) + ' '
-                print(line, file = output)
+                else:
+                    raise ValueError("Invalid dimensions")
         except FileNotFoundError:
             print("Invalid File Path")
 
@@ -164,6 +179,37 @@ class ImgMatConv:
         return array
     
     
+    def mapTo255(self, matrix):
+        '''
+        Maps all values of "1" in the input array/matrix to the value
+        of "255" to make the input array compatible with elements of the
+        MNIST dataset (which have values of 0 for "no writing" and
+        values between 1 and 255 for "writing". "255" in this case means
+        "absolute writing" i.e., black ink/pixels.
+        
+        Parameters:
+        matrix: numpy array (either 1D or 2D)
+        
+        Returns:
+        outputMatrix: numpy array of same dimensions
+        '''
+        if (len(matrix.shape) == 2):
+            outputMatrix = np.zeros((matrix.shape[0], matrix.shape[1]), dtype=int)
+            for i in range(matrix.shape[0]):
+                for j in range(matrix.shape[1]):
+                    if matrix[i][j] > 0:
+                        outputMatrix[i][j] = 255
+            return outputMatrix
+        
+        elif(len(matrix.shape) == 1):
+            outputMatrix = np.zeros((matrix.shape[0]), dtype=int)
+            for i in range(matrix.shape[0]):
+                if matrix[i] > 0:
+                    outputMatrix[i] = 255
+            return outputMatrix
+        else: 
+            raise ValueError("Invalid Dimensions")
+                
     
     def findCenterOfMass(self, matrix):
         '''
@@ -248,13 +294,8 @@ class ImgMatConv:
         origDimJ = matrix.shape[1]
         
         
-        print(matrix.shape[0], matrix.shape[1])
-        
         iMin, iMax, jMin, jMax = self.findIndexMinMax(matrix)
-        print (iCoord, jCoord)
-        print (iMin, iMax, jMin, jMax)
-        
-        
+
         iLength = 0
         jLength = 0
         iRatio = 1
@@ -295,8 +336,6 @@ class ImgMatConv:
             iStart += 1
             jStart = jTemp
             
-        
-        print(self.findCenterOfMass(outputMatrix))
         return outputMatrix
 
 
