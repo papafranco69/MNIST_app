@@ -49,16 +49,16 @@ class ParameterReader(ttk.Frame):
         for widget in self.root.winfo_children():
             widget.destroy()
 
-        paramList = self.setParameters(self.mlModelName)
-        paramInputs = self.constructParameterInput(paramList)
+        self.paramList = self.setParameters(self.mlModelName)
+        self.paramInputs = self.constructParameterInput(self.paramList)
         
-        button = ttk.Button(self.root, text = "Validate", command = lambda: self.validateInputs(paramInputs, paramList[1], paramList[0]))
-        button.grid(column = 0, row = len(paramList) + 2, columnspan = 2)
+        button = ttk.Button(self.root, text = "Validate", command = lambda: self.validateInputs(self.paramInputs, self.paramList[1], self.paramList[0]))
+        button.grid(column = 0, row = len(self.paramList) + 2, columnspan = 2)
         
         self.root.columnconfigure(0, weight = 3)
         self.root.columnconfigure(1, weight = 1)
         
-        for i in range (len(paramList) + 3):
+        for i in range (len(self.paramList) + 3):
             self.root.rowconfigure(i, weight = 1)
         
     
@@ -198,13 +198,19 @@ class ParameterReader(ttk.Frame):
         mlParamVals: List of int/strings. User input values.
         mlParamTypes: List of Strings. The widgets for inputting values.
         mlParamNames: List of STrings. Name of the ML learning parameters.
+        
         '''
         try:
             values = self.getParameterInputValues(mlParamVals, mlParamTypes, mlParamNames)
-            self.paramValsChecked = mlParamVals
+            self.paramValsChecked = []
+            
+            for value in mlParamVals[1]:
+                self.paramValsChecked.append(value.get())
+            
         except ValueError as e:
             messagebox.showerror(message=str(e), title = "Error")
             
     def getParamVals(self):
-        return self.paramValsChecked()
+        self.validateInputs(self.paramInputs, self.paramList[1], self.paramList[0])
+        return self.paramValsChecked
 
