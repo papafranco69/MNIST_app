@@ -7,12 +7,13 @@ Created on Apr 6, 2023
 
 @author: Peter Koropey
 '''
-
+import tkinter
 from tkinter import StringVar
 from tkinter import HORIZONTAL
 from tkinter import Scale
 from tkinter import messagebox
 from tkinter import ttk
+
 
 class ParameterReader(ttk.Frame):
     '''
@@ -22,7 +23,7 @@ class ParameterReader(ttk.Frame):
     '''
 
 
-    def __init__(self, container, mlModelName):
+    def __init__(self, container, mlModelName, **kw):
         '''
         This class creates a tkinter Frame with widgets for inputting
         parameters for the machine learning models. As a user selects a model,
@@ -32,13 +33,27 @@ class ParameterReader(ttk.Frame):
         container: tkinter parent container (likely a frame)
         mlModelName: string. Denotes the selected machine learning model.
         '''
-        super().__init__(container)
-        self.root = container
+        
+        super().__init__(master=container)
+        self.root = self
+        #self.root = self.master
+        #self.root = ttk.Frame(container)
+        #self.root = ttk.Frame(self.master)
+        #self.root = container
+        
+        #border = ttk.Labelframe(self.master)
+        #self.root = ttk.Labelframe(self.master)
+        #panel = ttk.Frame(self.master)
+        #self.root = ttk.Frame(panel)
+        
+        #self.root = ttk.Frame(container)
+        
         self.mlModelName = mlModelName
         self.paramValsChecked = []
         self.createPanel()
-    
-    
+        self.pack
+        #self.root.grid(row = 0, column = 0)
+
     def createPanel(self):
         '''
         Creates the ParameterReader panel.
@@ -46,14 +61,16 @@ class ParameterReader(ttk.Frame):
         '''
         
         #Clears all widgets from this frame. Prevents graphical errors.
-        for widget in self.root.winfo_children():
-            widget.destroy()
+        #No Longer necessary.
+        #for widget in self.root.winfo_children():
+        #for widget in self.master.winfo_children():
+            #widget.destroy()
 
         self.paramList = self.setParameters(self.mlModelName)
         self.paramInputs = self.constructParameterInput(self.paramList)
         
-        button = ttk.Button(self.root, text = "Validate", command = lambda: self.validateInputs(self.paramInputs, self.paramList[1], self.paramList[0]))
-        button.grid(column = 0, row = len(self.paramList) + 2, columnspan = 2)
+        #button = ttk.Button(self.root, text = "Validate", command = lambda: self.validateInputs(self.paramInputs, self.paramList[1], self.paramList[0]))
+        #button.grid(column = 0, row = len(self.paramList) + 2, columnspan = 2)
         
         self.root.columnconfigure(0, weight = 3)
         self.root.columnconfigure(1, weight = 1)
@@ -208,9 +225,21 @@ class ParameterReader(ttk.Frame):
                 self.paramValsChecked.append(value.get())
             
         except ValueError as e:
-            messagebox.showerror(message=str(e), title = "Error")
+            raise ValueError(e)
+            #self.paramValsChecked = []
+            #messagebox.showerror(message=str(e), title = "Error")
             
     def getParamVals(self):
         self.validateInputs(self.paramInputs, self.paramList[1], self.paramList[0])
         return self.paramValsChecked
+    
+    def getParamLabels(self):
+        labels = []
+        for label in self.paramInputs[0]:
+            labels.append(label.cget("text"))
+        
+        return labels
+
+#pr = ParameterReader(tkinter.Tk(), "knn")
+#pr.mainloop()
 
