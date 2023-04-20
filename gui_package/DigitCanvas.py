@@ -10,7 +10,7 @@ Created on Apr 5, 2023
 from tkinter import Canvas
 from tkinter import ttk
 import numpy as np
-from ImgMatConv import ImgMatConv
+from ImgMatConv.ImgMatConv import ImgMatConv
 from tkinter import messagebox
 
 class DigitCanvas(ttk.Frame):
@@ -48,9 +48,9 @@ class DigitCanvas(ttk.Frame):
             the user draws.
         
         '''
-        super().__init__()
-        self.root = container
-        
+        super().__init__(master = container)
+        #self.root = container
+        self.root = self
         border = ttk.Labelframe(self.root)
         utilFrame = ttk.Frame(border)
         
@@ -75,9 +75,6 @@ class DigitCanvas(ttk.Frame):
         
         clearBtn = ttk.Button(utilFrame, text = "Clear Canvas", command = lambda: self.clear_canvas(self.globalPixelMatrix))
         clearBtn.grid(column = 0, row = 0)
-        
-        submitBtn = ttk.Button(utilFrame, text = "Submit Digit", command = lambda :self.convertMatrixToTextFile(self.globalPixelMatrix, self.hasDrawn))
-        submitBtn.grid(column = 1, row = 0)
         
 
 
@@ -122,7 +119,7 @@ class DigitCanvas(ttk.Frame):
             for j in range(int(event.x)-5, int(event.x)+6):
                 #added the extra condition so short-circuit logic prevents extra operations
                 #It might not actually matter, however.
-                if localPixelMatrix[i][j] != 1 and 0 <= i < iMax and 0 <= j < jMax:
+                if 0 <= i < iMax and 0 <= j < jMax and localPixelMatrix[i][j] != 1:
                     localPixelMatrix[i][j] = 1
         
         self.hasDrawn = True
@@ -156,7 +153,7 @@ class DigitCanvas(ttk.Frame):
         '''
         if hasDrawn:
             try:
-                imc = ImgMatConv.ImgMatConv(self.globalPixelMatrix, self.outputPath)
+                imc = ImgMatConv(self.globalPixelMatrix, self.outputPath)
                 self.digitArray = imc.main()
                 self.classifyDigit(self.digitArray)
             except ValueError as e:
@@ -165,28 +162,19 @@ class DigitCanvas(ttk.Frame):
             messagebox.showerror(message="You must first Draw a Digit!", title = "Error")
 
         
-    def deriveArray(self, inpuMatrix, hasDrawn):
-        if hasDrawn:
+    def deriveArray(self):
+        if self.hasDrawn:
             try:
-                imc = ImgMatConv.ImgMatConv(self.globalPixelMatrix, self.outputPath)
+                imc = ImgMatConv(self.globalPixelMatrix, self.outputPath)
                 self.digitArray = imc.imgToArray()
                 
                 return self.digitArray
             except ValueError as e:
-                messagebox.showerror(message=str(e), title = "Error")
+                raise ValueError(e)
+                #messagebox.showerror(message=str(e), title = "Error")
         else:
-            messagebox.showerror(message="You must first Draw a Digit!", title = "Error")
-    
-    def classifyDigit(self, array):
-        '''Is meant to call methods for the machine learning models using the dataset element
-        Constructed by the ImgMatConv class. As of now, this doesn't do anything, but it should
-        be simple to integrate when the time comes.
-        
-        Parameters:
-        array: a numpy 1D integer array.
-        
-        '''
-        messagebox.askyesno(title = "Digit Classified!", message = "Your digit is a:\nIs this Right?")
+            raise ValueError("You must first Draw a Digit!")
+            #messagebox.showerror(message="You must first Draw a Digit!", title = "Error")
     
     def getDigitArray(self):
         return self.digitArray
