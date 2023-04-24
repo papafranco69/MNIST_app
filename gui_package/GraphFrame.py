@@ -22,8 +22,8 @@ class GraphFrame(ttk.Frame):
         container: TKinter Parent Container (likely a Frame)
         mplFig: MatPlotLib.pyplot plot/figure
         '''
-        super().__init__()
-        self.root = container
+        super().__init__(master = container)
+        self.root = self
         self.mplFig = mplFig
         self.drawFigure(self.mplFig)
 

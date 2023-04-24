@@ -8,13 +8,13 @@ from gui_package.ParameterReader import ParameterReader
 from gui_package.DigitCanvas import DigitCanvas
 from sklearn.datasets import  fetch_openml
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import  StandardScaler
-import matplotlib.pyplot as plt
+#from sklearn.preprocessing import  StandardScaler
+#import matplotlib.pyplot as plt
 from scipy import  stats
 import numpy as np
-import pandas as pd
-import joblib
-from sklearn.metrics import accuracy_score
+#import pandas as pd
+#import joblib
+#from sklearn.metrics import accuracy_score
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.ensemble import RandomForestClassifier
 
@@ -31,6 +31,7 @@ class ML_Function(object):
         Paramters:
         pr: ParameterReader class
         dc: DigitCanvas class
+        defaultModel: the starting ML model (string)
         '''
         
         self.pr = pr
@@ -50,8 +51,11 @@ class ML_Function(object):
         mnist = fetch_openml('mnist_784', version=1, as_frame=False, parser='auto')
         self.X, self.y = mnist["data"], mnist["target"]
         self.y = self.y.astype(np.uint8)
-        testPercent = 1.0 - mlParamVals[2]*0.01
-        self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(self.X, self.y, test_size =testPercent, random_state = 1)
+        #The partition value is always that last parameter from ParameterReader class.
+        #print(mlParamVals)
+        testPercent = 1.0 - mlParamVals[-1]*0.01
+        randomSeed = mlParamVals[-2]
+        self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(self.X, self.y, test_size = testPercent, random_state = randomSeed)
     
     
     def printRowMajor(self, array):
@@ -73,6 +77,12 @@ class ML_Function(object):
                 x = 0
     
     def setMLmodel(self, mlModelName):
+        '''
+        Sets the "mlModelName" attribute to parameter.
+        
+        Paramters:
+        mlModelName: String. Must be compatible with mlModels
+        '''
         self.isTrained = False
         self.mlModelName = mlModelName
     
@@ -100,12 +110,10 @@ class ML_Function(object):
         mlModel: the machine learning model
         '''
         if mlModelName == "knn":
-            #mlModel = KNN_scratch(mlParamVals[0], mlParamVals[1])
             mlModel = KNN_scratch(int(mlParamVals[0]))
             
             
         elif mlModelName == "randomForest":
-            #uses sklearn implementation for now
             mlModel = RandomForestClassifier(max_depth = int(mlParamVals[0]), n_estimators = int(mlParamVals[1]))
 
         
@@ -133,6 +141,23 @@ class ML_Function(object):
         '''
         return self.pr.getParamVals()
     
+    def getMLparamLabels(self):
+        '''
+        Getter method for ML parameter labels.
+        Returns:
+        List of Strings
+        '''
+        return self.pr.getParamLabels()
+    
+    
+    def getMLmodelName(self):
+        '''
+        Getter method for selected ML model name.
+        Returns:
+        String
+        '''
+        return self.mlModelName
+    
     def getDrawnDigitArray(self):
         '''
         Gets the 784 element integer array based on the user's drawing
@@ -142,7 +167,14 @@ class ML_Function(object):
         numpy 1D integer array.
         '''
         return self.dc.deriveArray()
-        
+            
+    def getIsTrained(self):
+        '''
+        Checks whether the selected ML model is trained.
+        Returns: Boolean.
+        '''
+        return self.isTrained
+    
     def classifyDigit(self):
         '''
         Classifies the User Drawn digit by returning the expected class value
@@ -177,6 +209,10 @@ class ML_Function(object):
         return self.isTrained
     
     def runMLtesting(self):
+        '''
+        Method for testing the machine learning model.
+        This is what external classes should call.
+        '''
         try:
             if self.isTrained:
                 self.testMLmodel(self.mlModel, self.X_test)
@@ -186,22 +222,26 @@ class ML_Function(object):
             raise ValueError(e)
     
     def runMLtraining(self):
+        '''
+        Method for running all the machine learning training.
+        This is what external classes should call.
+        '''
+        temp = self.mlParamVals
         try:
-            paramsChanged = self.checkParameterChange(self.mlParamVals)
-            
-            if not self.isTrained or paramsChanged:
-                self.mlParamVals = self.getMLparameters()
-                self.loadDataSet(self.mlParamVals)
-                self.trainMLmodel(self.mlModelName, self.mlParamVals)
-                #print(self.mlParamVals, self.pr.getParamLabels())
-                return self.mlParamVals, self.pr.getParamLabels()
+            self.mlParamVals = self.getMLparameters()
+            self.loadDataSet(self.mlParamVals)
+            self.trainMLmodel(self.mlModelName, self.mlParamVals)
+            return self.mlParamVals, self.pr.getParamLabels()
         except ValueError as e:
-            self.isTrained = False
+            self.mlParamVals = temp
             raise ValueError(e)
         
     
     
     def main(self):
+        '''
+        only used during testing.
+        '''
         paramsChanged = self.checkParameterChange(self.mlParamVals)
         
         if not self.isTrained or paramsChanged:
@@ -214,6 +254,12 @@ class ML_Function(object):
     
     
     def setParamReader(self, pr):
+        '''
+        Setter method for the self.pr attribute (ParameterReader instance
+        associated with instance of ML_Function)
+        Parameters:
+        pr: ParameterReader class.
+        '''
         self.pr = pr
         
         

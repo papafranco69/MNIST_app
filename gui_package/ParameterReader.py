@@ -20,6 +20,7 @@ class ParameterReader(ttk.Frame):
     This class uses the Tkinter library to create a frame with widgets
     for inputting the various parameters which the user can define for the 
     different machine learning models in this application.
+    This is essentially a self-contained unit acting as a frame.
     '''
 
 
@@ -33,44 +34,24 @@ class ParameterReader(ttk.Frame):
         container: tkinter parent container (likely a frame)
         mlModelName: string. Denotes the selected machine learning model.
         '''
-        
         super().__init__(master=container)
         self.root = self
-        #self.root = self.master
-        #self.root = ttk.Frame(container)
-        #self.root = ttk.Frame(self.master)
-        #self.root = container
-        
-        #border = ttk.Labelframe(self.master)
-        #self.root = ttk.Labelframe(self.master)
-        #panel = ttk.Frame(self.master)
-        #self.root = ttk.Frame(panel)
-        
-        #self.root = ttk.Frame(container)
-        
+
         self.mlModelName = mlModelName
         self.paramValsChecked = []
         self.createPanel()
         self.pack
-        #self.root.grid(row = 0, column = 0)
+
 
     def createPanel(self):
         '''
         Creates the ParameterReader panel.
         Called by the Constructor.
         '''
-        
-        #Clears all widgets from this frame. Prevents graphical errors.
-        #No Longer necessary.
-        #for widget in self.root.winfo_children():
-        #for widget in self.master.winfo_children():
-            #widget.destroy()
 
         self.paramList = self.setParameters(self.mlModelName)
         self.paramInputs = self.constructParameterInput(self.paramList)
         
-        #button = ttk.Button(self.root, text = "Validate", command = lambda: self.validateInputs(self.paramInputs, self.paramList[1], self.paramList[0]))
-        #button.grid(column = 0, row = len(self.paramList) + 2, columnspan = 2)
         
         self.root.columnconfigure(0, weight = 3)
         self.root.columnconfigure(1, weight = 1)
@@ -156,12 +137,21 @@ class ParameterReader(ttk.Frame):
             thisInput.grid(column = 1, row = i+1, sticky = 'w')
             paramInputs.append(thisInput)
         
+        randomLabel = ttk.Label(self.root, text = "Random State Seed: ")
+        randomSeedValue = ttk.Entry(self.root)
+        randomSeedValue.insert(0, 1)
+        randomLabel.grid(column = 0, row = i+2, sticky = 'w')
+        randomSeedValue.grid(column = 1, row = i+2, sticky = 'w')
+        
+        paramLabels.append(randomLabel)
+        paramInputs.append(randomSeedValue)
+        
         sliderLabel = ttk.Label(self.root, text="Percentage of Dataset\nUsed for Training:")
-        sliderLabel.grid(column = 0, row = i+2, columnspan = 2, sticky = 's')
+        sliderLabel.grid(column = 0, row = i+3, columnspan = 2, sticky = 's')
         sliderInput = 75.0
         slider = Scale(self.root, from_=1.0, to=99.0, orient = HORIZONTAL, length = 200, variable = sliderInput)
         slider.set(sliderInput)
-        slider.grid(column = 0, row = i+3, columnspan = 2, sticky = 'n')
+        slider.grid(column = 0, row = i+4, columnspan = 2, sticky = 'n')
         
         paramLabels.append(sliderLabel)
         paramInputs.append(slider)
@@ -182,13 +172,13 @@ class ParameterReader(ttk.Frame):
         Returns:
         values: List. Int/strings. The validated user-input values.
         '''
+        mlParamTypes.append("textbox")
         mlParamTypes.append("scale")
         values = []
         for i in range(len(mlParamVals[1])):
             if mlParamTypes[i] == "textbox" or mlParamTypes[i] == "scale":
                 try:
-                    val = int(mlParamVals[1][i].get())
-                    
+                    val = int(mlParamVals[1][i].get())  
                     if val < 0:
                         raise ValueError("Input for " + mlParamNames[i]+" must be greater than 0")
                     
@@ -219,27 +209,29 @@ class ParameterReader(ttk.Frame):
         '''
         try:
             values = self.getParameterInputValues(mlParamVals, mlParamTypes, mlParamNames)
-            self.paramValsChecked = []
+            self.paramValsChecked = values
             
-            for value in mlParamVals[1]:
-                self.paramValsChecked.append(value.get())
+            return values
             
         except ValueError as e:
             raise ValueError(e)
-            #self.paramValsChecked = []
-            #messagebox.showerror(message=str(e), title = "Error")
             
     def getParamVals(self):
+        '''
+        Getter method for retrieving the values in the parameter input boxes.
+        Returns: list of int/string
+        '''
         self.validateInputs(self.paramInputs, self.paramList[1], self.paramList[0])
         return self.paramValsChecked
     
     def getParamLabels(self):
+        '''
+        Getter method for retrieving the labels of the parameter input boxes.
+        Returns: list of String.
+        '''
         labels = []
         for label in self.paramInputs[0]:
             labels.append(label.cget("text"))
         
         return labels
-
-#pr = ParameterReader(tkinter.Tk(), "knn")
-#pr.mainloop()
 
