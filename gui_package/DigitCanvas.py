@@ -49,7 +49,6 @@ class DigitCanvas(ttk.Frame):
         
         '''
         super().__init__(master = container)
-        #self.root = container
         self.root = self
         border = ttk.Labelframe(self.root)
         utilFrame = ttk.Frame(border)
@@ -163,6 +162,14 @@ class DigitCanvas(ttk.Frame):
 
         
     def deriveArray(self):
+        '''
+        Generates the numpy 1D integer array corresponding to the centered. 28x28 pixel
+        version of the user-drawn digit. 
+        Returns:
+        1D Numpy int array
+        
+        Throws exceptions if conditions are not met.
+        '''
         if self.hasDrawn:
             try:
                 imc = ImgMatConv(self.globalPixelMatrix, self.outputPath)
@@ -171,10 +178,16 @@ class DigitCanvas(ttk.Frame):
                 return self.digitArray
             except ValueError as e:
                 raise ValueError(e)
-                #messagebox.showerror(message=str(e), title = "Error")
+
         else:
             raise ValueError("You must first Draw a Digit!")
-            #messagebox.showerror(message="You must first Draw a Digit!", title = "Error")
+
     
     def getDigitArray(self):
+        '''
+        Getter method for the numpy 1D int array corresponding to centered,
+        reduced version of drawing.
+        Returns:
+        1D Numpy int array (784 elements)
+        '''
         return self.digitArray
