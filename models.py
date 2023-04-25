@@ -1,11 +1,14 @@
 from sklearn.datasets import fetch_openml
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score
+from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
-import matplotlib.pyplot as plt
-from scipy import stats
 import numpy as np
 import pandas as pd
+import time
 import joblib
+from annoy import AnnoyIndex
 
 
 """
@@ -19,10 +22,19 @@ mnist = fetch_openml('mnist_784', version=1, as_frame=False, parser='auto')
 X, y = mnist["data"], mnist["target"]
 # cast y to integers
 y = y.astype(np.uint8)
-X_train, X_test, y_train, y_test = X[:60000], X[60000:], y[:60000], y[60000:]
 
-# scaler = StandardScaler()
-# X_train_scaled = scaler.fit_transform(X_train.astype(np.float64))
+# Standardize the data
+scaler = StandardScaler()
+X_std = scaler.fit_transform(X)
+
+# Reduce the dimensionality using PCA
+pca = PCA(n_components=50)
+X_pca = pca.fit_transform(X_std)
+
+
+# Split the dataset into training and test sets
+X_train, X_test, y_train, y_test = train_test_split(X_pca, y, test_size=0.2, random_state=42)
+
 
 
 
@@ -51,64 +63,73 @@ grid_search.fit(X_train, y_train)
 n_neighbors = 4
 weights = 'distance'
 
-knn_clf = KNeighborsClassifier(n_neighbors=n_neighbors, weights=weights)
-knn_clf.fit(X_train, y_train)
-# Return the mean accuracy on the given test data and labels.
-print("Test Score: ", knn_clf.score(X_test, y_test))
-
+# knn_clf = KNeighborsClassifier(n_neighbors=n_neighbors, weights=weights)
+# knn_clf.fit(X_train, y_train)
+# # Return the mean accuracy on the given test data and labels.
+# print("Test Score: ", knn_clf.score(X_test, y_test))
 
 
 
 class KNN_scratch:
-    """
-    KNN from Scratch
-    """
-    def __init__(self, k=n_neighbors):
+    def __init__(self, k=5, n_trees=10, n_jobs=-1):
         self.k = k
+        self.n_trees = n_trees
+        self.n_jobs = n_jobs
         self.X_train = None
         self.y_train = None
+        self.index = None
 
-    def euclidean(p, q):
+    def fit(self, X_train, y_train):
         """
-        Using this function to calculate the distance between each observation in the training data
-        param p: np.array, first vector
-        param q: np.array, second vector
-        return float, distance
+        Using AnnoyIndex data structure to build an index of the training data;
+        so we can retrieve the nearest neighbors of a query point more efficiently.
+        Each data point in X_train is added to the AnnoyIndex object using its index
+        as an unique indentifier. 
+
+        Parameters:
+        -----------
+        X_train: pd.Dataframe features
+        y_train: pd.Serie Target
         """
-        return np.sqrt(np.sum((p - q) ** 2))
-    
-    def fit(self, X, y):
+        self.X_train = X_train
+        self.y_train = y_train
+        self.index = AnnoyIndex(self.X_train.shape[1], metric='euclidean')
+        for i, x in enumerate(self.X_train):
+            self.index.add_item(i, x)
+        self.index.build(self.n_trees)
+
+    def predict(self, X_test):
         """
-        Trains the model. 
-        No training is required for KNN,
-        so this saves the parameters to the constructor.
+        Loops over each data point in the X_test and use the `get_nns_by_vector`
+        to retrieve the K nearest neighbors of the query point in the training dataset.
+        Using max() and key() functions to find the most common label among the k nearest neighbors. 
 
-        param X: pd.Dataframe, features
-        param y: pd.Series, target
-        return None
+        Parameters:
+        -----------
+        X_test: pd.Dataframe features
+        Return: numpy array predicted labels for each test sample in X_test
         """
-
-        self.X_train = X
-        self.y_train = y
-    
-    def predict(self, X):
-        """
-        Predicts the class labels based on nearest neighbors
-        param X: pd.Dataframe, features
-        return: np.array, predicted class labels
-        """
-
-        predictions = []
-        for p in X:
-            distances = [self.euclidean(p, q) for q in self.X_train]
-            sorted_k = np.argsort(distances)[:self.k]
-            k_nearest = [self.y_train[y] for y in sorted_k]
-            predictions.append(stats.mode(k_nearest)[0][0])
-
-        return np.array(predictions)
-    
-
-
+        y_pred = []
+        for x in X_test:
+            idx = self.index.get_nns_by_vector(x, self.k)
+            k_nearest_labels = [self.y_train[i] for i in idx]
+            most_common_label = max(set(k_nearest_labels), key=k_nearest_labels.count)
+            y_pred.append(most_common_label)
+        return y_pred
 
     
+knn = KNN_scratch(k=3)
 
+startTime = time.time()
+
+# Fit the model to the training data
+knn.fit(X_train, y_train)
+
+# Make predictions on the test data
+y_pred = knn.predict(X_test)
+
+# Compute the accuracy of the model
+accuracy = accuracy_score(y_test, y_pred)
+
+print('Accuracy:', accuracy)
+print("--- %s seconds ---" % (time.time() - startTime)) 
