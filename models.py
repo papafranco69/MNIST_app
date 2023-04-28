@@ -1,40 +1,7 @@
-from sklearn.datasets import fetch_openml
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import accuracy_score
-from sklearn.decomposition import PCA
-from sklearn.preprocessing import StandardScaler
-import numpy as np
-import pandas as pd
-import time
-import joblib
+from sklearn.base import BaseEstimator
 from annoy import AnnoyIndex
-
-
-"""
-Notes to put on docs:
-
-
-
-"""
-mnist = fetch_openml('mnist_784', version=1, as_frame=False, parser='auto')
-
-X, y = mnist["data"], mnist["target"]
-# cast y to integers
-y = y.astype(np.uint8)
-
-# Standardize the data
-scaler = StandardScaler()
-X_std = scaler.fit_transform(X)
-
-# Reduce the dimensionality using PCA
-pca = PCA(n_components=50)
-X_pca = pca.fit_transform(X_std)
-
-
-# Split the dataset into training and test sets
-X_train, X_test, y_train, y_test = train_test_split(X_pca, y, test_size=0.2, random_state=42)
-
+import numpy as np
 
 
 
@@ -63,6 +30,10 @@ grid_search.fit(X_train, y_train)
 n_neighbors = 4
 weights = 'distance'
 
+"""
+Sample code for sklearn's KNN classifier
+"""
+
 # knn_clf = KNeighborsClassifier(n_neighbors=n_neighbors, weights=weights)
 # knn_clf.fit(X_train, y_train)
 # # Return the mean accuracy on the given test data and labels.
@@ -70,7 +41,23 @@ weights = 'distance'
 
 
 
-class KNN_scratch:
+class KNN_scratch(BaseEstimator):
+    """
+    Original implementation of K-Nearest-Neighbor algorithm.
+    Inheriting from sklearn.base.BaseEstimator,
+    which allow users to get and set the parameters
+    of the estimator as a dictionary. 
+
+    Example:
+    ----------
+    from models import KNN_scratch
+
+    n_neighbor = 3
+    knn_scratch = KNN_scratch(k=n_neighbors)
+    knn_scratch.fit(X_train, y_train)
+    y_pred = knn_scratch.predict(X_test)
+    
+    """
     def __init__(self, k=5, n_trees=10, n_jobs=-1):
         self.k = k
         self.n_trees = n_trees
@@ -116,20 +103,33 @@ class KNN_scratch:
             most_common_label = max(set(k_nearest_labels), key=k_nearest_labels.count)
             y_pred.append(most_common_label)
         return y_pred
-
     
-knn = KNN_scratch(k=3)
+    def get_params(self, deep=True):
+        """
+        Return the parameters of the model as a dictionary.
+        """
+        return {"k": self.k, "n_trees": self.n_trees, "n_jobs": self.n_jobs}
+    
+    def predict_proba(self, X_test):
+        """
+        Loops over each data point in the X_test and use the `get_nns_by_vector`
+        to retrieve the K nearest neighbors of the query point in the training dataset.
+        Compute the probability of each class using the proportion of neighbors 
+        with the same label over the total number of neighbors.
 
-startTime = time.time()
+        Parameters:
+        -----------
+        X_test: pd.Dataframe features
+        Return: numpy array of shape (n_samples, n_classes) with predicted probabilities
+        """
+        y_proba = []
+        for x in X_test:
+            idx = self.index.get_nns_by_vector(x, self.k)
+            k_nearest_labels = [self.y_train[i] for i in idx]
+            proba = np.zeros(len(np.unique(self.y_train)))
+            for label in np.unique(self.y_train):
+                proba[label] = k_nearest_labels.count(label) / self.k
+            y_proba.append(proba)
+        return np.array(y_proba)
 
-# Fit the model to the training data
-knn.fit(X_train, y_train)
 
-# Make predictions on the test data
-y_pred = knn.predict(X_test)
-
-# Compute the accuracy of the model
-accuracy = accuracy_score(y_test, y_pred)
-
-print('Accuracy:', accuracy)
-print("--- %s seconds ---" % (time.time() - startTime)) 
