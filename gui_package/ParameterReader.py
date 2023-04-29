@@ -7,12 +7,11 @@ Created on Apr 6, 2023
 
 @author: Peter Koropey
 '''
-import tkinter
-from tkinter import StringVar
 from tkinter import HORIZONTAL
 from tkinter import Scale
-from tkinter import messagebox
 from tkinter import ttk
+from tkinter import BooleanVar
+from utility.ML_Model_Params import mlParams as mlParams
 
 
 class ParameterReader(ttk.Frame):
@@ -36,7 +35,9 @@ class ParameterReader(ttk.Frame):
         '''
         super().__init__(master=container)
         self.root = self
-
+        
+        self.enablePrePro = BooleanVar(value = False)
+        
         self.mlModelName = mlModelName
         self.paramValsChecked = []
         self.createPanel()
@@ -60,12 +61,11 @@ class ParameterReader(ttk.Frame):
             self.root.rowconfigure(i, weight = 1)
         
     
-    
     def setParameters(self, mlModelName):
         '''
         Sets the parameters available for editing by the user
         based on the selected machine learning model. This is hardcoded,
-        and this method will need adjusting as more machine learning models are added.
+        into the utility.ML_Model_Params dictionary.
         
         Parameters:
         mlModelName: string. The selected machine learning model.
@@ -76,26 +76,9 @@ class ParameterReader(ttk.Frame):
         [1]: the Parameter input widget types (string)
         [2]: The parameter input default values (int/string)
         [3]: the Name of the selected machine learning model.
+        These are based on the utility.ML_Model_Params dictionary.
         '''
-        
-        mlParamLabels = []
-        mlParamTypes = []
-        mlParamValues = []
-        mlTitle = StringVar
-        if mlModelName == "knn":
-            mlParamLabels = ["Number of Neighbors", "Weight Function"]
-            mlParamTypes = ["textbox", "combobox"]
-            mlParamValues = [5, ('uniform', 'distance')]
-            mlTitle = "K-Nearest Neighbors"
-        
-        if mlModelName == "randomForest":
-            mlParamLabels = ["Decision Depth", "Number of Estimators"]
-            mlParamTypes = ["textbox", "textbox"]
-            mlParamValues = [10, 10]
-            mlTitle = "Random Forest"
-        
-        return [mlParamLabels, mlParamTypes, mlParamValues, mlTitle]
-    
+        return mlParams[mlModelName]
     
     def constructParameterInput(self, paramList):
         '''
@@ -119,7 +102,7 @@ class ParameterReader(ttk.Frame):
         thisLabel = ttk.Label()
         i = 0
         
-        for i in range(len(paramList[0])):
+        for i in range(len(paramList[0])-1):
             thisLabel = ttk.Label(self.root, text = paramList[0][i])
             thisLabel.grid(column = 0, row = i+1, sticky = 'w')
             paramLabels.append(thisLabel)
@@ -132,32 +115,25 @@ class ParameterReader(ttk.Frame):
                 thisInput = ttk.Combobox(self.root, state = "readonly")
                 thisInput['values'] = paramList[2][i]
                 thisInput.current(0)
-
+                
+            if paramList[1][i] == "checkbutton":
+                self.enablePrePro.set(value = bool( paramList[2][i] ))
+                thisInput = ttk.Checkbutton(self.root, variable = self.enablePrePro, onvalue = True, offvalue = False)
               
             thisInput.grid(column = 1, row = i+1, sticky = 'w')
             paramInputs.append(thisInput)
-        
-        randomLabel = ttk.Label(self.root, text = "Random State Seed: ")
-        randomSeedValue = ttk.Entry(self.root)
-        randomSeedValue.insert(0, 1)
-        randomLabel.grid(column = 0, row = i+2, sticky = 'w')
-        randomSeedValue.grid(column = 1, row = i+2, sticky = 'w')
-        
-        paramLabels.append(randomLabel)
-        paramInputs.append(randomSeedValue)
-        
-        sliderLabel = ttk.Label(self.root, text="Percentage of Dataset\nUsed for Training:")
+
+        #Add the Partition scale and its label separate, so they can be vertically arranged.
+        sliderLabel = ttk.Label(self.root, text = paramList[0][-1])
         sliderLabel.grid(column = 0, row = i+3, columnspan = 2, sticky = 's')
-        sliderInput = 75.0
-        slider = Scale(self.root, from_=1.0, to=99.0, orient = HORIZONTAL, length = 200, variable = sliderInput)
-        slider.set(sliderInput)
+        slider = Scale(self.root, from_=1.0, to=99.0, orient = HORIZONTAL, length = 200, variable = paramList[2][-1])
+        slider.set(paramList[2][-1])
         slider.grid(column = 0, row = i+4, columnspan = 2, sticky = 'n')
         
         paramLabels.append(sliderLabel)
         paramInputs.append(slider)
         
         return [paramLabels, paramInputs]
-
 
     def getParameterInputValues(self, mlParamVals, mlParamTypes, mlParamNames):
         '''
@@ -172,14 +148,15 @@ class ParameterReader(ttk.Frame):
         Returns:
         values: List. Int/strings. The validated user-input values.
         '''
-        mlParamTypes.append("textbox")
-        mlParamTypes.append("scale")
+        
         values = []
+        
         for i in range(len(mlParamVals[1])):
             if mlParamTypes[i] == "textbox" or mlParamTypes[i] == "scale":
                 try:
                     val = int(mlParamVals[1][i].get())  
                     if val < 0:
+                        #print(i)
                         raise ValueError("Input for " + mlParamNames[i]+" must be greater than 0")
                     
                     else:
@@ -191,6 +168,13 @@ class ParameterReader(ttk.Frame):
                     values.append(str(mlParamVals[1][i].get()))
                 except:
                     raise ValueError("Combobox Error")
+            elif mlParamTypes[i] == "checkbutton":
+
+                try:
+                    #print(self.enablePrePro.get())
+                    values.append(self.enablePrePro.get())
+                except:
+                    raise ValueError("Checkbutton Error")
             else:
                 raise ValueError("Invalid widget type.")
             

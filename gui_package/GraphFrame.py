@@ -34,8 +34,15 @@ class GraphFrame(ttk.Frame):
         This method draws a matplotlib figure directly onto a TKinter canvas.
         
         Paramters:
-        mplFig: MatPlotLib.pyplot plot/figure
+        mplFig: MatPlotLib.pyplot figure
         '''
         canvas = FigureCanvasTkAgg(mplFig, master = self.root)
         canvas.draw()
-        canvas.get_tk_widget().pack( )
+        canvas.get_tk_widget().grid(column = 0, row = 0)
+
+
+    def set_mplFig(self, mplFig):
+        self.mplFig = mplFig
+    
+    def reset(self):
+        self.mplFig = None

@@ -10,7 +10,7 @@ Created on Apr 5, 2023
 from tkinter import Canvas
 from tkinter import ttk
 import numpy as np
-from ImgMatConv.ImgMatConv import ImgMatConv
+from utility.ImgMatConv import ImgMatConv
 from tkinter import messagebox
 
 class DigitCanvas(ttk.Frame):
