@@ -8,15 +8,14 @@ from gui_package.ParameterReader import ParameterReader
 from gui_package.DigitCanvas import DigitCanvas
 from sklearn.datasets import  fetch_openml
 from sklearn.model_selection import train_test_split
-#from sklearn.preprocessing import  StandardScaler
-#import matplotlib.pyplot as plt
-from scipy import  stats
 import numpy as np
-#import pandas as pd
-#import joblib
-#from sklearn.metrics import accuracy_score
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.ensemble import RandomForestClassifier
+from utility.ML_Model_Params import mlParams as mlParams
+from utils import plot_ROC
+from utils import Metrics
+from utils import Preprocessing
+
 
 
 class ML_Function(object):
@@ -37,7 +36,7 @@ class ML_Function(object):
         self.pr = pr
         self.dc = dc
         self.isTrained = False
-        self.mlModelName = defaultModel
+        self.mlModelType = defaultModel
         self.mlModel = None
         self.mlParamVals = self.getMLparameters()
     
@@ -52,10 +51,17 @@ class ML_Function(object):
         self.X, self.y = mnist["data"], mnist["target"]
         self.y = self.y.astype(np.uint8)
         #The partition value is always that last parameter from ParameterReader class.
-        #print(mlParamVals)
         testPercent = 1.0 - mlParamVals[-1]*0.01
         randomSeed = mlParamVals[-2]
-        self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(self.X, self.y, test_size = testPercent, random_state = randomSeed)
+        
+        #The preprocessing boolean value is the first parameter.
+        self.preprocess = mlParamVals[0]
+        
+        if self.preprocess:
+            localX = Preprocessing(self.X).fit_transform()
+        else:
+            localX = self.X
+        self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(localX, self.y, test_size = testPercent, random_state = randomSeed)
     
     
     def printRowMajor(self, array):
@@ -76,51 +82,55 @@ class ML_Function(object):
                 string = ""
                 x = 0
     
-    def setMLmodel(self, mlModelName):
+    def setMLmodel(self, mlModelType):
         '''
-        Sets the "mlModelName" attribute to parameter.
+        Sets the "mlModelType" attribute to parameter.
         
         Paramters:
-        mlModelName: String. Must be compatible with mlModels
+        mlModelType: String. Must be compatible with mlModels
         '''
         self.isTrained = False
-        self.mlModelName = mlModelName
+        self.mlModelType = mlModelType
     
     def testMLmodel(self, mlModel, testingPartition):
         '''
         Tests the selected machine learning model after training.
         
         Parameters:
+        mlModel: machine learning model class
+        testingPartition: float
         
         Returns:
+        numpy array (predicted value)
         '''
         if self.isTrained:
-            return mlModel.predict(testingPartition)
+            return  mlModel.predict(testingPartition)
+            
         
     
-    def trainMLmodel(self, mlModelName, mlParamVals):
+    def trainMLmodel(self, mlModelType, mlParamVals):
         '''
         Instantiates and Trains the user-selected Machine Learning Model.
         
         Parameters:
-        mlModelName: String
+        mlModelType: String
         mlParamVals: list of integers/strings
         
         Returns:
         mlModel: the machine learning model
         '''
-        if mlModelName == "knn":
-            mlModel = KNN_scratch(int(mlParamVals[0]))
+        if mlModelType == "knn":
+            mlModel = KNN_scratch(int(mlParamVals[1]))
             
             
-        elif mlModelName == "randomForest":
-            mlModel = RandomForestClassifier(max_depth = int(mlParamVals[0]), n_estimators = int(mlParamVals[1]))
+        elif mlModelType == "randomForest":
+            mlModel = RandomForestClassifier(max_depth = int(mlParamVals[1]), n_estimators = int(mlParamVals[2]))
 
         
-        elif mlModelName == "knn_sk":
-            mlModel = KNeighborsClassifier(n_neighbors = int(mlParamVals[0]))
-        elif mlModelName == "randomForest_sk":
-            mlModel = RandomForestClassifier(max_depth = int(mlParamVals[0]), n_estimators = int(mlParamVals[1]))
+        elif mlModelType == "knn_sk":
+            mlModel = KNeighborsClassifier(n_neighbors = int(mlParamVals[1]))
+        elif mlModelType == "randomForest_sk":
+            mlModel = RandomForestClassifier(max_depth = int(mlParamVals[1]), n_estimators = int(mlParamVals[2]))
         
         mlModel.fit(self.X_train, self.y_train)
         self.isTrained = True
@@ -156,7 +166,7 @@ class ML_Function(object):
         Returns:
         String
         '''
-        return self.mlModelName
+        return mlParams[self.mlModelType][3]
     
     def getDrawnDigitArray(self):
         '''
@@ -180,11 +190,20 @@ class ML_Function(object):
         Classifies the User Drawn digit by returning the expected class value
         from the selected ML model for the drawn digit.
         
+        Paramters:
+        preprocess: Boolean. Indicates preprocessing
+        
         Returns:
         Integer
         '''
         if self.isTrained:
-            return self.testMLmodel(self.mlModel, self.getDrawnDigitArray().reshape(1, -1))[0]
+            
+            if self.preprocess:
+                temp = self.getDrawnDigitArray().reshape(1, -1)
+                value = Preprocessing(temp).fit_transform()
+            else:
+                value = self.getDrawnDigitArray().reshape(1, -1) 
+            return self.testMLmodel(self.mlModel, value)[0]
         else:
             raise ValueError("You must first Train a Machine Learning Model!")
     
@@ -215,7 +234,13 @@ class ML_Function(object):
         '''
         try:
             if self.isTrained:
-                self.testMLmodel(self.mlModel, self.X_test)
+                y_pred = self.testMLmodel(self.mlModel, self.X_test)
+                eval = Metrics(self.y_test, y_pred)
+                precision = eval.get_precision()
+                recall = eval.get_recall()
+                f1 = eval.get_f1_score()
+                fig = plot_ROC(self.mlModel, self.X_test, self.y_test).plot(self.getMLmodelName())
+                return precision, recall, f1, fig
             else:
                 raise ValueError("Machine Learning model is not yet trained!")
         except ValueError as e:
@@ -230,28 +255,12 @@ class ML_Function(object):
         try:
             self.mlParamVals = self.getMLparameters()
             self.loadDataSet(self.mlParamVals)
-            self.trainMLmodel(self.mlModelName, self.mlParamVals)
+            self.trainMLmodel(self.mlModelType, self.mlParamVals)
             return self.mlParamVals, self.pr.getParamLabels()
         except ValueError as e:
             self.mlParamVals = temp
             raise ValueError(e)
         
-    
-    
-    def main(self):
-        '''
-        only used during testing.
-        '''
-        paramsChanged = self.checkParameterChange(self.mlParamVals)
-        
-        if not self.isTrained or paramsChanged:
-            self.mlParamVals = self.getMLparameters()
-            self.loadDataSet(self.mlParamVals)
-            mlModel = self.trainMLmodel(self.mlModelName, self.mlParamVals)
-            print("Trained!")
-        
-        return self.classifyDigit()
-    
     
     def setParamReader(self, pr):
         '''
