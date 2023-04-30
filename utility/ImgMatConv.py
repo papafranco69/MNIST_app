@@ -366,17 +366,39 @@ class ImgMatConv:
             for jCounter in range(0, smallJ):
                 
                 sum = 0
-                
+                '''
                 for i in range(iCounter * iRatio, iRatio * (iCounter+1)):
                     for j in range(jCounter * jRatio, jRatio * (jCounter+1)):
+                        
                         sum += matrix[i][j]
+                '''
+                output[iCounter][jCounter] = self.shrinkMatrixInner(iCounter, jCounter, iRatio, jRatio, matrix)
                 
+                '''
                 if (sum > 0):
                     output[iCounter][jCounter] = 1
                 else:
                     output[iCounter][jCounter] = 0
-                    
+                ''' 
         return output
+    
+    def shrinkMatrixInner(self, iCounter, jCounter, iRatio, jRatio, matrix):
+        '''
+        This function exists to prevent needless iterations of the matrix.
+        As soon as a 1 is found, iteration of the sub-matrix immediately ends.
+        
+        Parameters:
+        iCounter, jCounter: Int
+        iRatio, jRatio: Int
+        matrix: numpy 2D int matrix
+        
+        Returns: Int (1 or 0)
+        '''
+        for i in range(iCounter * iRatio, iRatio * (iCounter+1)):
+            for j in range(jCounter * jRatio, jRatio * (jCounter+1)):
+                if matrix[i][j] == 1:
+                    return 1
+        return 0
     
     def padMatrix(self, matrix, padSize=4):
         '''

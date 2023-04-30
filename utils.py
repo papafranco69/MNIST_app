@@ -147,7 +147,7 @@ class plot_ROC:
         self.y_test = y_test
         self.n_class = n_class
 
-    def plot(self):
+    def plot(self, modelName = "K-Nearest Neighbor"):  #PK - added a parameter for model name for graphing
         """
         generates the ROC curve for the model on the test data,
         and returns the FPR, TPR, and AUC scores for each class
@@ -177,7 +177,7 @@ class plot_ROC:
         roc_auc["micro"] = auc(fpr["micro"], tpr["micro"])
 
         # Plot ROC curves
-        plt.figure()
+        fig = plt.figure()  #PK - added this assignment for GUI compatibility
         lw = 2
         plt.plot(fpr["micro"], tpr["micro"], color='darkorange',
                 lw=lw, label='micro-average ROC curve (area = %0.2f)' % roc_auc["micro"])
@@ -190,7 +190,6 @@ class plot_ROC:
         plt.ylim([0.0, 1.05])
         plt.xlabel('False Positive Rate')
         plt.ylabel('True Positive Rate')
-        plt.title('Receiver operating characteristic for KNN_scratch on MNIST')
+        plt.title('Receiver operating characteristic for ' + modelName + ' on MNIST')
         plt.legend(loc="lower right")
-        plt.show()
-
+        return fig      #PK - added this return for GUI compatibility
