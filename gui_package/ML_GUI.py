@@ -278,6 +278,4 @@ class ML_GUI(object):
         else:
             ttk.Label(frame, text = "Status:").grid(column = 0, row = 0)
             ttk.Label(frame, text = "NOT TRAINED").grid(column = 1, row = 0)
-    
-    
-mlgui = ML_GUI()
+
