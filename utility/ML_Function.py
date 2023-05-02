@@ -127,11 +127,6 @@ class ML_Function(object):
             mlModel = RandomForestClassifier(max_depth = int(mlParamVals[1]), n_estimators = int(mlParamVals[2]))
 
         
-        elif mlModelType == "knn_sk":
-            mlModel = KNeighborsClassifier(n_neighbors = int(mlParamVals[1]))
-        elif mlModelType == "randomForest_sk":
-            mlModel = RandomForestClassifier(max_depth = int(mlParamVals[1]), n_estimators = int(mlParamVals[2]))
-        
         mlModel.fit(self.X_train, self.y_train)
         self.isTrained = True
         
