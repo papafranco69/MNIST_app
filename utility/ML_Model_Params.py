@@ -16,6 +16,10 @@ Universal Values for Random State Seed and Partion scale are "tacked on" at the 
 via the for loop, so programmers do not have to add them.
 '''
 
+#Unfortunately, we encountered some problems with compatibility between the pre-processing
+#and user-drawn digit classification featues. This boolean makes it easy to disable
+#the pre-processing reature altogether, if necessary. 
+preProAllowed = True
 
 mlParams = {
     'knn': [ ["Number of Neighbors", "Weight Function"], ["textbox", "combobox"], [5, ['uniform', 'distance']], "K-Nearest Neighbors" ], 
@@ -24,12 +28,15 @@ mlParams = {
 
 #Add Necessary "Universal" Values: Enabling/Disabling of Preprocessing, Random Seed, and Partition Scale
 for key in mlParams:
-    mlParams[key][0].insert(0, "Enable Preprocessing")
+    
+    if preProAllowed:
+        mlParams[key][0].insert(0, "Enable Preprocessing")
+        mlParams[key][1].insert(0, "checkbutton")
+        mlParams[key][2].insert(0, 0)
+    
     mlParams[key][0].append("Random State Seed")
     mlParams[key][0].append("Percentage of Dataset\nUsed for Training")
-    mlParams[key][1].insert(0, "checkbutton")
     mlParams[key][1].append("textbox")
     mlParams[key][1].append("scale")
-    mlParams[key][2].insert(0, 0)
     mlParams[key][2].append(1)
     mlParams[key][2].append(75.0)
