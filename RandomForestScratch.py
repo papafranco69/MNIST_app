@@ -33,12 +33,8 @@ class RandomForestScratch:
         forest = []
         i = 0
         while i <= (self.n_trees - 1):
-            #localStart = time.time()
-            print("Growing Tree: ", i)
             tree = DecisionTree(max_depth=self.max_depth)
             tree.fit(self.X_train_split_arr[i], self.y_train_split_arr[i])
-            #fitTime = time.time()
-            #print("Fit Time: ", (fitTime - localStart) / 60, "min")
             forest.append(tree)
             i += 1
         
