@@ -19,11 +19,11 @@ via the for loop, so programmers do not have to add them.
 #Unfortunately, we encountered some problems with compatibility between the pre-processing
 #and user-drawn digit classification featues. This boolean makes it easy to disable
 #the pre-processing reature altogether, if necessary. 
-preProAllowed = True
+preProAllowed = False
 
 mlParams = {
     'knn': [ ["Number of Neighbors", "Weight Function"], ["textbox", "combobox"], [5, ['uniform', 'distance']], "K-Nearest Neighbors" ], 
-    'randomForest': [ ["Decision Depth", "Number of Estimators"], ["textbox", "textbox"], [10, 10], "Random Forest" ]
+    'randomForest': [ ["Decision Depth", "Number of Trees"], ["textbox", "textbox"], [4, 10], "Random Forest" ]
     }
 
 #Add Necessary "Universal" Values: Enabling/Disabling of Preprocessing, Random Seed, and Partition Scale

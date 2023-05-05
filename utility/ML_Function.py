@@ -10,7 +10,7 @@ from sklearn.datasets import  fetch_openml
 from sklearn.model_selection import train_test_split
 import numpy as np
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.ensemble import RandomForestClassifier
+from RandomForestScratch import RandomForestScratch
 from utility.ML_Model_Params import mlParams as mlParams
 from utility.ML_Model_Params import preProAllowed as preProAllowed
 from utils import plot_ROC
@@ -114,8 +114,8 @@ class ML_Function(object):
             
             
         elif mlModelType == "randomForest":
-            mlModel = RandomForestClassifier(max_depth = int(mlParamVals[idx]), n_estimators = int(mlParamVals[idx+1]))
-
+            #mlModel = RandomForestClassifier(max_depth = int(mlParamVals[idx]), n_estimators = int(mlParamVals[idx+1]))
+            mlModel = RandomForestScratch(max_depth = int(mlParamVals[idx]), n_trees = int(mlParamVals[idx+1]))
         
         mlModel.fit(self.X_train, self.y_train)
         self.isTrained = True
