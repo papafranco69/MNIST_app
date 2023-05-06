@@ -10,8 +10,9 @@ from sklearn.datasets import  fetch_openml
 from sklearn.model_selection import train_test_split
 import numpy as np
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.ensemble import RandomForestClassifier
+from RandomForestScratch import RandomForestScratch
 from utility.ML_Model_Params import mlParams as mlParams
+from utility.ML_Model_Params import preProAllowed as preProAllowed
 from utils import plot_ROC
 from utils import Metrics
 from utils import Preprocessing
@@ -54,33 +55,17 @@ class ML_Function(object):
         testPercent = 1.0 - mlParamVals[-1]*0.01
         randomSeed = mlParamVals[-2]
         
-        #The preprocessing boolean value is the first parameter.
-        self.preprocess = mlParamVals[0]
+        #The preprocessing boolean value is the first parameter, if it has been made available
+        self.preprocess = 0
+        if preProAllowed:
+            self.preprocess = mlParamVals[0]
         
         if self.preprocess:
             localX = Preprocessing(self.X).fit_transform()
         else:
             localX = self.X
         self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(localX, self.y, test_size = testPercent, random_state = randomSeed)
-    
-    
-    def printRowMajor(self, array):
-        '''
-        Prints an array as a matrix in row-major order.
-        Used during testing.
-        
-        Paramters:
-        array: numpy 1D integer array.
-        '''
-        string = ""
-        x = 0
-        for i in range(array.shape[0]):
-            string = string + str(array[i]) + " "
-            x+=1
-            if x == 28:
-                print(string)
-                string = ""
-                x = 0
+
     
     def setMLmodel(self, mlModelType):
         '''
@@ -119,13 +104,18 @@ class ML_Function(object):
         Returns:
         mlModel: the machine learning model
         '''
+        idx = 0
+        if preProAllowed:
+            idx = 1
+        
+        
         if mlModelType == "knn":
-            mlModel = KNN_scratch(int(mlParamVals[1]))
+            mlModel = KNN_scratch(int(mlParamVals[idx]))
             
             
         elif mlModelType == "randomForest":
-            mlModel = RandomForestClassifier(max_depth = int(mlParamVals[1]), n_estimators = int(mlParamVals[2]))
-
+            #mlModel = RandomForestClassifier(max_depth = int(mlParamVals[idx]), n_estimators = int(mlParamVals[idx+1]))
+            mlModel = RandomForestScratch(max_depth = int(mlParamVals[idx]), n_trees = int(mlParamVals[idx+1]))
         
         mlModel.fit(self.X_train, self.y_train)
         self.isTrained = True
