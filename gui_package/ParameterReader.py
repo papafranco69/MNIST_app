@@ -155,10 +155,8 @@ class ParameterReader(ttk.Frame):
             if mlParamTypes[i] == "textbox" or mlParamTypes[i] == "scale":
                 try:
                     val = int(mlParamVals[1][i].get())  
-                    if val < 0:
-                        #print(i)
+                    if val <= 0:
                         raise ValueError("Input for " + mlParamNames[i]+" must be greater than 0")
-                    
                     else:
                         values.append(val)
                 except ValueError:
