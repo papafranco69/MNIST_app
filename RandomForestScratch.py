@@ -16,12 +16,21 @@ from collections import Counter
 class RandomForestScratch:
 
     def __init__(self, n_trees, max_depth):
-        self.n_trees = n_trees
-        self.max_depth = max_depth
         self.X_train = None
         self.y_train = None
         #PK- Added an attribute to make it compatible with gui
         self.trees = None
+        
+        if max_depth > 100:
+            raise ValueError("Maximum Decision Depth must not be greater than 100")
+        else:
+            self.max_depth = max_depth
+            
+        if n_trees > 1000:
+            raise ValueError("Maximum Number of Trees must not be greater than 1000")
+        else:
+            self.n_trees = n_trees
+            
 
     def fit(self, X_train, y_train):
         self.X_train = X_train

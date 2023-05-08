@@ -23,11 +23,16 @@ class Node:
 
 
 class DecisionTree:
-    def __init__(self, min_samples_split=2, max_depth=100, n_features=None):
+    def __init__(self, min_samples_split=2, max_depth=30, n_features=None):
         self.min_samples_split = min_samples_split
-        self.max_depth = max_depth
         self.n_features = n_features
         self.root = None
+        
+        if max_depth > 100:
+            raise ValueError( "Maximum Decision Depth must not be greater than 100")
+        else:
+            self.max_depth = max_depth
+        
 
     def fit(self, X, y):
         """This function creates the decision tree"""
